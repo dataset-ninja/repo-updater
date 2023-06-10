@@ -1,0 +1,114 @@
+import os
+import json
+import shutil
+import subprocess
+
+from typing import Dict
+
+from git import Repo
+import supervisely as sly
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_DIR = os.path.join(CURRENT_DIR, "repos")
+sly.fs.clean_dir(REPO_DIR)
+
+
+def process_repo(repo: Dict):
+    repo_url = repo["url"]
+    repo_name = repo_url.split("/")[-1].split(".")[0]
+    forces = repo["forces"]
+
+    sly.logger.info(
+        f"Started processing repo {repo_name} from {repo_url} and following forces: {forces}"
+    )
+
+    local_repo_path = os.path.join(REPO_DIR, repo_name)
+    sly.fs.mkdir(local_repo_path, remove_content_if_exists=True)
+
+    repo = Repo.clone_from(repo_url, local_repo_path)
+
+    sly.logger.info(f"Cloned repo {repo_name} to {local_repo_path}.")
+
+    script_path = os.path.join(local_repo_path, "src", "main.py")
+    command = f"PYTHONPATH=\"{local_repo_path}:${{PYTHONPATH}}\" python {script_path} --forces '{json.dumps(forces)}'"
+
+    sly.logger.info(f"Preparing to run command: {command}")
+
+    process = subprocess.Popen(
+        command, shell=True, cwd=local_repo_path, stdout=subprocess.PIPE, text=True
+    )
+
+    for line in iter(process.stdout.readline, ""):
+        print(line.strip())
+
+    # Wait for the process to finish and get the return code.
+    return_code = process.wait()
+
+    if return_code != 0:
+        sly.logger.error(f"Script finished with error code {return_code}.")
+        raise RuntimeError(f"Script finished with error code {return_code}.")
+    else:
+        sly.logger.info("Script finished successfully.")
+
+    # For some reason GitHub returns 500 error if trying to use .gitignore with GitPython.
+    # delete_pycache(local_repo_path)
+
+    # Adding all files to index.
+    index = repo.index
+    index.add("*")
+
+    # If there is no changes in index, then there is nothing to commit.
+    if not index.diff("HEAD"):
+        sly.logger.info(
+            f"No files was added to index in {repo_name} repo. Nothing to commit."
+        )
+        sly.fs.remove_dir(local_repo_path)
+        return
+
+    repo.index.commit("Automatic commit by repo-updater.")
+
+    sly.logger.info("Created commit. Pushing...")
+
+    remote = repo.remote("origin")
+    remote.push()
+
+    sly.logger.info(f"Commit was pushed to {repo_name} repo.")
+    sly.fs.remove_dir(local_repo_path)
+
+
+def delete_pycache(directory):
+    for root, dirs, files in os.walk(directory):
+        for dir in dirs:
+            if dir == "__pycache__":
+                pycache_dir = os.path.join(root, dir)
+                shutil.rmtree(pycache_dir)
+
+
+if __name__ == "__main__":
+    # * Path to the JSON file with repo urls and force parameters.
+    # Example:
+    # [
+    #     {
+    # ?       "url": "https://github.com/dataset-ninja/some-repo.git",
+    #         "forces": {
+    # *                     "force_stats": ["ObjectsDistribution"],
+    # *                     "force_visuals": ["Poster"],
+    # *                     "force_texts": ["summary"]}
+    #                   }
+    #      }
+    # ]
+
+    REPOS_JSON = os.path.join(CURRENT_DIR, "repos.json")
+
+    if not os.path.exists(REPOS_JSON):
+        sly.logger.error(f"File {REPOS_JSON} not found.")
+        raise FileNotFoundError(f"File {REPOS_JSON} not found.")
+
+    repos = json.load(open(REPOS_JSON, "r"))
+
+    sly.logger.info(f"Found {len(repos)} repos in {REPOS_JSON}.")
+
+    for repo in repos:
+        process_repo(repo)
+
+    sly.logger.info("All repos was processed successfully.")
