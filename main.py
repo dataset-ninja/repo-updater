@@ -16,7 +16,7 @@ sly.fs.clean_dir(REPO_DIR)
 def process_repo(repo: Dict):
     repo_url = repo["url"]
     repo_name = repo_url.split("/")[-1].split(".")[0]
-    forces = repo["forces"]
+    forces = repo.get("forces", {})
 
     sly.logger.info(
         f"Started processing repo {repo_name} from {repo_url} and following forces: {forces}"
@@ -50,8 +50,7 @@ def process_repo(repo: Dict):
     else:
         sly.logger.info("Script finished successfully.")
 
-    # For some reason GitHub returns 500 error if trying to use .gitignore with GitPython.
-    # delete_pycache(local_repo_path)
+    delete_pycache(local_repo_path)
 
     # Adding all files to index.
     index = repo.index
@@ -76,12 +75,9 @@ def process_repo(repo: Dict):
     sly.fs.remove_dir(local_repo_path)
 
 
-def delete_pycache(directory):
-    for root, dirs, files in os.walk(directory):
-        for dir in dirs:
-            if dir == "__pycache__":
-                pycache_dir = os.path.join(root, dir)
-                shutil.rmtree(pycache_dir)
+def delete_pycache(local_repo_path):
+    pycache_dir = os.path.join(local_repo_path, "src", "__pycache__")
+    shutil.rmtree(pycache_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
