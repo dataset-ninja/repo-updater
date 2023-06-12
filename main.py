@@ -9,6 +9,7 @@ from git import Repo
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_DIR = os.path.join(CURRENT_DIR, "repos")
+sly.fs.mkdir(REPO_DIR)
 sly.fs.clean_dir(REPO_DIR)
 
 
