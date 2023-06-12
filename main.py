@@ -115,7 +115,7 @@ if __name__ == "__main__":
     #         "forces": {
     # *                     "force_stats": ["ObjectsDistribution"],
     # *                     "force_visuals": ["Poster"],
-    # *                     "force_texts": ["summary"]}
+    # *                     "force_texts": ["all"]}
     #                   }
     #      }
     # ]
