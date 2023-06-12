@@ -1,6 +1,19 @@
 [
-    {
-        "url": "https://github.com/dataset-ninja/kolektor-surface-defect-dataset-2.git",
-        "forces": {"force_visuals": ["Poster"]}
+  {
+    "url": "https://github.com/dataset-ninja/mvtec-d2s.git",
+    "forces": {
+      "force_stats": [
+        "ClassBalance",
+        "ClassCooccurrence",
+        "ClassesPerImage",
+        "ObjectsDistribution",
+        "ObjectSizes",
+        "ClassSizes",
+        "ClassesHeatmaps",
+        "ClassesPreview"
+      ],
+      "force_visuals": ["all"],
+      "force_texts": ["all"]
     }
+  }
 ]
