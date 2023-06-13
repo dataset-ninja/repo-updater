@@ -1,17 +1,8 @@
 [
   {
-    "url": "https://github.com/dataset-ninja/mvtec-d2s.git",
+    "url": "https://github.com/dataset-ninja/cityscapes.git",
     "forces": {
-      "force_stats": [
-        "ClassBalance",
-        "ClassCooccurrence",
-        "ClassesPerImage",
-        "ObjectsDistribution",
-        "ObjectSizes",
-        "ClassSizes",
-        "ClassesHeatmaps",
-        "ClassesPreview"
-      ],
+      "force_stats": [],
       "force_visuals": ["all"],
       "force_texts": ["all"]
     }
