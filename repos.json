@@ -1,19 +1,45 @@
-[
-  {
-    "url": "https://github.com/dataset-ninja/mvtec-d2s.git",
-    "forces": {
-      "force_stats": [
-        "ClassBalance",
-        "ClassCooccurrence",
-        "ClassesPerImage",
-        "ObjectsDistribution",
-        "ObjectSizes",
-        "ClassSizes",
-        "ClassesHeatmaps",
-        "ClassesPreview"
-      ],
-      "force_visuals": ["all"],
-      "force_texts": ["all"]
+{
+  "batch_forces": {
+    "force_stats": ["ObjectsDistribution"],
+    "force_visuals": [],
+    "force_texts": []
+  },
+  "repo_list": [
+    {
+      "url": "https://github.com/dataset-ninja/pcb-component-detection"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/photometric-stereo-leafs"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/water-meters"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/self-driving-cars"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/kolektor-surface-defect-dataset-2"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/chest-xray"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/synthetic-plants"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/bsdata"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/deep-nir-fruit"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/kfuji"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/neon-tree"
+    },
+    {
+      "url": "https://github.com/dataset-ninja/pear-desease"
     }
-  }
-]
+  ]
+}

@@ -1,8 +1,9 @@
 import json
 import os
 import shutil
+import signal
 import subprocess
-from typing import Dict
+from typing import Dict, List
 
 import supervisely as sly
 from git import Repo
@@ -13,10 +14,38 @@ sly.fs.mkdir(REPO_DIR)
 sly.fs.clean_dir(REPO_DIR)
 
 
-def process_repo(repo: Dict):
+class TimeoutError(Exception):
+    pass
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError()
+
+
+def timeout(seconds):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+
+            try:
+                result = func(*args, **kwargs)
+            except TimeoutError:
+                sly.logger.error(f"Script timed out after {seconds} seconds and was terminated.")
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wrapper
+
+    return decorator
+
+
+def process_repo(repo: Dict[str, List[str]], batch_forces: Dict[str, List[str]]):
     repo_url = repo["url"]
     repo_name = repo_url.split("/")[-1].split(".")[0]
     forces = repo.get("forces", {})
+    forces = merge_forces(forces, batch_forces)
 
     sly.logger.info(
         f"Started processing repo {repo_name} from {repo_url} and following forces: {forces}"
@@ -95,9 +124,23 @@ def process_repo(repo: Dict):
 
     sly.logger.info("Created commit. Pushing...")
 
+    push(repo, repo_name, local_repo_path)
+
+
+def merge_forces(forces: Dict[str, List[str]], batch_forces: Dict[str, List[str]]):
+    for force_type, force_list in batch_forces.items():
+        if force_type not in forces:
+            forces[force_type] = []
+
+        forces[force_type].extend(force_list)
+
+    return forces
+
+
+@timeout(60)
+def push(repo: Repo, repo_name: str, local_repo_path: str):
     remote = repo.remote("origin")
     remote.push()
-
     sly.logger.info(f"Commit was pushed to {repo_name} repo.")
     sly.fs.remove_dir(local_repo_path)
 
@@ -127,11 +170,27 @@ if __name__ == "__main__":
         sly.logger.error(f"File {REPOS_JSON} not found.")
         raise FileNotFoundError(f"File {REPOS_JSON} not found.")
 
-    repos = json.load(open(REPOS_JSON, "r"))
+    repos_json = json.load(open(REPOS_JSON, "r"))
+    batch_forces = repos_json.get("batch_forces", {})
+
+    if batch_forces:
+        sly.logger.warning(
+            f"Warning! Found batch forces: {batch_forces}. They will be applied to all repos."
+        )
+
+    print(batch_forces)
+    repos = repos_json["repo_list"]
 
     sly.logger.info(f"Found {len(repos)} repos in {REPOS_JSON}.")
 
     for repo in repos:
-        process_repo(repo)
+        process_repo(repo, batch_forces)
 
-    sly.logger.info("All repos was processed successfully.")
+    repos_dirs = os.listdir(REPO_DIR)
+    # If any dir exists in REPO_DIR, then there is some repos that was not processed.
+    if repos_dirs:
+        sly.logger.warning(f"Found {len(repos_dirs)} repos that was not pushed!")
+        sly.logger.warning("Check each repo and push it manually!")
+    else:
+        sly.logger.info("All repos was processed successfully.")
+    sly.logger.info("Script finished.")
